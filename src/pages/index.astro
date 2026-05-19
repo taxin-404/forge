@@ -1,0 +1,295 @@
+---
+import Layout from '../layouts/Layout.astro';
+const tools = [
+  {
+    href: '/json',
+    icon: '{}',
+    name: 'JSON',
+    desc: 'Format, validate & minify JSON with error detection.',
+    features: ['Format', 'Minify', 'Validate'],
+  },
+  {
+    href: '/base64',
+    icon: '64',
+    name: 'Base64',
+    desc: 'Encode or decode Base64 strings and files.',
+    features: ['Text encode', 'File encode', 'Decode'],
+  },
+  {
+    href: '/hash',
+    icon: '#',
+    name: 'Hash',
+    desc: 'Generate cryptographic hashes using Web Crypto API.',
+    features: ['SHA-256', 'SHA-512', 'SHA-1'],
+  },
+  {
+    href: '/uuid',
+    icon: '⊞',
+    name: 'UUID',
+    desc: 'Generate RFC-4122 compliant v4 UUIDs in bulk.',
+    features: ['v4 UUIDs', 'Bulk gen', 'Copy all'],
+  },
+  {
+    href: '/color',
+    icon: '◈',
+    name: 'Color',
+    desc: 'Convert between HEX, RGB, HSL and preview live.',
+    features: ['HEX ↔ RGB', 'HSL', 'Palette'],
+  },
+  {
+    href: '/timestamp',
+    icon: '⧖',
+    name: 'Timestamp',
+    desc: 'Convert Unix timestamps to dates and back.',
+    features: ['Unix ↔ Date', 'Live clock', 'Timezone'],
+  },
+  {
+    href: '/regex',
+    icon: '.*',
+    name: 'Regex',
+    desc: 'Test regular expressions with live match highlighting.',
+    features: ['Live match', 'Flags', 'Groups'],
+  },
+  {
+    href: '/diff',
+    icon: '±',
+    name: 'Diff',
+    desc: 'Compare two texts line-by-line with visual diff.',
+    features: ['Line diff', 'Added', 'Removed'],
+  },
+];
+---
+<Layout title="Home">
+  <div class="home">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-label">DEVELOPER TOOLBOX</div>
+      <h1 class="hero-title">
+        <span class="hero-line">FORGE</span>
+        <span class="hero-sub">8 tools. Zero BS. Free forever.</span>
+      </h1>
+      <p class="hero-body">
+        All tools run entirely in your browser — no server, no tracking, no cost.
+        Built on Astro, deployed on Cloudflare Pages.
+      </p>
+      <div class="hero-badges">
+        <span class="badge">⚡ OFFLINE READY</span>
+        <span class="badge">🔒 NO DATA SENT</span>
+        <span class="badge">🆓 ALWAYS FREE</span>
+      </div>
+    </section>
+
+    <!-- Grid -->
+    <section class="grid-section">
+      <div class="grid-label">PICK A TOOL</div>
+      <div class="tools-grid">
+        {tools.map((t, i) => (
+          <a href={t.href} class="tool-card">
+            <div class="card-index">{String(i + 1).padStart(2, '0')}</div>
+            <div class="card-icon">{t.icon}</div>
+            <div class="card-name">{t.name}</div>
+            <div class="card-desc">{t.desc}</div>
+            <div class="card-features">
+              {t.features.map(f => <span class="feat">{f}</span>)}
+            </div>
+            <div class="card-arrow">→</div>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="home-footer">
+      <span>Built with Astro · Hosted on Cloudflare Pages (free)</span>
+      <span>No ads · No tracking · No nonsense</span>
+    </footer>
+  </div>
+</Layout>
+
+<style>
+  .home {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* Hero */
+  .hero {
+    padding: 48px 36px 40px;
+    border-bottom: 1px solid var(--border);
+    background:
+      radial-gradient(ellipse 60% 50% at 80% 50%, rgba(127,255,0,0.04) 0%, transparent 70%),
+      var(--bg);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: 'FORGE';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 140px;
+    font-weight: 700;
+    color: rgba(127,255,0,0.025);
+    letter-spacing: -0.05em;
+    pointer-events: none;
+    user-select: none;
+  }
+  .hero-label {
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+  .hero-title {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .hero-line {
+    font-size: 56px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--text);
+  }
+  .hero-sub {
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    font-weight: 400;
+  }
+  .hero-body {
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--muted);
+    max-width: 480px;
+    line-height: 1.7;
+  }
+  .hero-badges {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    border: 1px solid var(--border2);
+    padding: 4px 10px;
+    color: var(--muted);
+    background: var(--surface);
+  }
+
+  /* Grid */
+  .grid-section {
+    flex: 1;
+    padding: 24px 28px 32px;
+  }
+  .grid-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+  .tool-card {
+    background: var(--bg);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: background 0.15s;
+    position: relative;
+    cursor: pointer;
+    min-height: 160px;
+  }
+  .tool-card:hover {
+    background: var(--surface);
+  }
+  .tool-card:hover .card-arrow {
+    color: var(--accent);
+    transform: translateX(4px);
+  }
+  .tool-card:hover .card-icon {
+    color: var(--accent);
+    text-shadow: 0 0 12px var(--accent-glow);
+  }
+
+  .card-index {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    font-size: 9px;
+    color: var(--muted2);
+    letter-spacing: 0.1em;
+  }
+  .card-icon {
+    font-size: 18px;
+    font-style: normal;
+    color: var(--muted);
+    transition: all 0.15s;
+    margin-bottom: 2px;
+    line-height: 1;
+  }
+  .card-name {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--text);
+  }
+  .card-desc {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.5;
+    flex: 1;
+  }
+  .card-features {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+  .feat {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    border: 1px solid var(--border2);
+    padding: 2px 6px;
+    color: var(--muted2);
+  }
+  .card-arrow {
+    position: absolute;
+    bottom: 14px;
+    right: 14px;
+    font-size: 14px;
+    color: var(--muted2);
+    transition: all 0.15s;
+  }
+
+  /* Footer */
+  .home-footer {
+    padding: 14px 28px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  @media (max-width: 700px) {
+    .hero { padding: 28px 20px 28px; }
+    .hero-line { font-size: 36px; }
+    .grid-section { padding: 20px 16px; }
+    .home-footer { flex-direction: column; gap: 2px; padding: 12px 16px; }
+  }
+</style>

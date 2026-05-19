@@ -1,0 +1,225 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PageHeader from '../components/PageHeader.astro';
+---
+<Layout title="UUID">
+  <PageHeader title="UUID Generator" desc="Generate RFC-4122 v4 UUIDs — cryptographically random, all in-browser" />
+
+  <div class="tool-body">
+    <div class="controls">
+      <div class="control-group">
+        <label class="ctrl-label">COUNT</label>
+        <input type="number" id="count" value="10" min="1" max="500" />
+      </div>
+      <div class="control-group">
+        <label class="ctrl-label">FORMAT</label>
+        <select id="format">
+          <option value="standard">Standard (lowercase)</option>
+          <option value="upper">Uppercase</option>
+          <option value="no-dash">No dashes</option>
+          <option value="braces">With braces</option>
+        </select>
+      </div>
+      <div class="btn-group">
+        <button id="btn-gen" class="primary">Generate</button>
+        <button id="btn-copy-all">Copy All</button>
+        <button id="btn-clear" class="danger">Clear</button>
+      </div>
+      <span id="gen-status" class="gen-status"></span>
+    </div>
+
+    <div class="uuid-list-wrap">
+      <div class="list-hd">
+        <span id="list-count" class="list-count">0 UUIDs</span>
+        <span class="hint">Click any UUID to copy</span>
+      </div>
+      <div id="uuid-list" class="uuid-list">
+        <div class="list-empty">Click Generate to create UUIDs</div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .tool-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    height: calc(100vh - 89px);
+  }
+  .controls {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .ctrl-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+  }
+  #count { width: 80px; }
+  #format { width: 180px; }
+  .btn-group { display: flex; gap: 6px; align-self: flex-end; }
+  .gen-status { font-size: 10px; color: var(--accent); align-self: flex-end; }
+
+  .uuid-list-wrap {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
+  }
+  .list-hd {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .list-count { font-size: 9px; letter-spacing: 0.15em; color: var(--muted); }
+  .hint { font-size: 9px; color: var(--muted); letter-spacing: 0.05em; }
+
+  .uuid-list {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+  }
+  .list-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .uuid-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    gap: 12px;
+  }
+  .uuid-item:last-child { border-bottom: none; }
+  .uuid-item:hover {
+    background: var(--surface2);
+    color: var(--accent);
+  }
+  .uuid-item:hover .uuid-num { color: var(--accent); }
+  .uuid-num {
+    font-size: 9px;
+    color: var(--muted2);
+    letter-spacing: 0.1em;
+    flex-shrink: 0;
+    width: 28px;
+  }
+  .uuid-text { flex: 1; font-family: var(--font); }
+  .uuid-tag {
+    font-size: 9px;
+    color: var(--muted2);
+    flex-shrink: 0;
+    letter-spacing: 0.1em;
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+  .uuid-item:hover .uuid-tag { opacity: 1; }
+  .uuid-item.copied { background: var(--accent-dim); }
+  .uuid-item.copied .uuid-text { color: var(--accent); }
+
+  @media (max-width: 700px) {
+    .tool-body { height: auto; }
+    .uuid-list { max-height: 70vh; }
+  }
+</style>
+
+<script>
+  const list    = document.getElementById('uuid-list')    as HTMLElement;
+  const countEl = document.getElementById('list-count')   as HTMLElement;
+  const status  = document.getElementById('gen-status')   as HTMLElement;
+  const countIn = document.getElementById('count')        as HTMLInputElement;
+  const fmtSel  = document.getElementById('format')       as HTMLSelectElement;
+
+  function genUUID(): string {
+    return crypto.randomUUID();
+  }
+
+  function applyFormat(uuid: string): string {
+    switch (fmtSel.value) {
+      case 'upper':   return uuid.toUpperCase();
+      case 'no-dash': return uuid.replace(/-/g, '');
+      case 'braces':  return `{${uuid}}`;
+      default:        return uuid;
+    }
+  }
+
+  let generated: string[] = [];
+
+  function render() {
+    if (!generated.length) {
+      list.innerHTML = '<div class="list-empty">Click Generate to create UUIDs</div>';
+      countEl.textContent = '0 UUIDs';
+      return;
+    }
+    list.innerHTML = generated.map((u, i) => `
+      <div class="uuid-item" data-uuid="${u}">
+        <span class="uuid-num">${String(i + 1).padStart(2, '0')}</span>
+        <span class="uuid-text">${u}</span>
+        <span class="uuid-tag">COPY</span>
+      </div>
+    `).join('');
+    countEl.textContent = `${generated.length} UUID${generated.length > 1 ? 's' : ''}`;
+
+    list.querySelectorAll('.uuid-item').forEach(item => {
+      item.addEventListener('click', async () => {
+        const uuid = (item as HTMLElement).dataset.uuid!;
+        await navigator.clipboard.writeText(uuid);
+        item.classList.add('copied');
+        (item.querySelector('.uuid-tag') as HTMLElement).textContent = 'COPIED';
+        setTimeout(() => {
+          item.classList.remove('copied');
+          (item.querySelector('.uuid-tag') as HTMLElement).textContent = 'COPY';
+        }, 1200);
+      });
+    });
+  }
+
+  document.getElementById('btn-gen')!.addEventListener('click', () => {
+    const n = Math.min(Math.max(parseInt(countIn.value) || 10, 1), 500);
+    generated = Array.from({ length: n }, () => applyFormat(genUUID()));
+    render();
+    status.textContent = `Generated ${n} UUIDs`;
+    setTimeout(() => status.textContent = '', 2000);
+  });
+
+  document.getElementById('btn-copy-all')!.addEventListener('click', async () => {
+    if (!generated.length) return;
+    await navigator.clipboard.writeText(generated.join('\n'));
+    status.textContent = `✓ Copied ${generated.length} UUIDs`;
+    setTimeout(() => status.textContent = '', 2000);
+  });
+
+  document.getElementById('btn-clear')!.addEventListener('click', () => {
+    generated = [];
+    render();
+    status.textContent = '';
+  });
+
+  // Generate on load
+  generated = Array.from({ length: 10 }, () => applyFormat(genUUID()));
+  render();
+</script>

@@ -1,0 +1,338 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PageHeader from '../components/PageHeader.astro';
+---
+<Layout title="Color">
+  <PageHeader title="Color Converter" desc="Convert between HEX, RGB, HSL and OKLCH — with live preview and palette generator" />
+
+  <div class="tool-body">
+    <div class="main-area">
+      <!-- Picker + Swatch -->
+      <div class="picker-col">
+        <div class="swatch-big" id="swatch">
+          <input type="color" id="native-picker" value="#7FFF00" title="Click to pick" />
+        </div>
+        <div class="swatch-info">
+          <span id="swatch-hex" class="swatch-hex">#7FFF00</span>
+          <span id="swatch-name" class="swatch-name muted">chartreuse</span>
+        </div>
+      </div>
+
+      <!-- Inputs grid -->
+      <div class="inputs-col">
+        <div class="fmt-row">
+          <div class="fmt-group">
+            <label class="fmt-label">HEX</label>
+            <div class="fmt-ctrl">
+              <input type="text" id="inp-hex" value="#7FFF00" maxlength="9" spellcheck="false" />
+              <button class="copy-val" data-src="inp-hex">COPY</button>
+            </div>
+          </div>
+
+          <div class="fmt-group">
+            <label class="fmt-label">RGB</label>
+            <div class="fmt-ctrl triple">
+              <input type="number" id="inp-r" value="127" min="0" max="255" title="Red" />
+              <input type="number" id="inp-g" value="255" min="0" max="255" title="Green" />
+              <input type="number" id="inp-b" value="0"   min="0" max="255" title="Blue" />
+              <button class="copy-val" data-rgb>COPY</button>
+            </div>
+          </div>
+
+          <div class="fmt-group">
+            <label class="fmt-label">HSL</label>
+            <div class="fmt-ctrl triple">
+              <input type="number" id="inp-h" value="90"  min="0" max="360" title="Hue" />
+              <input type="number" id="inp-s" value="100" min="0" max="100" title="Sat %" />
+              <input type="number" id="inp-l" value="50"  min="0" max="100" title="Light %" />
+              <button class="copy-val" data-hsl>COPY</button>
+            </div>
+          </div>
+
+          <div class="fmt-group">
+            <label class="fmt-label">CSS VALUES</label>
+            <div class="css-list" id="css-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Palette generator -->
+    <div class="palette-section">
+      <div class="section-hd">
+        <span class="section-label">PALETTE</span>
+        <div class="pal-tabs">
+          <button class="pal-tab active" data-mode="shades">Shades</button>
+          <button class="pal-tab" data-mode="tints">Tints</button>
+          <button class="pal-tab" data-mode="complementary">Complementary</button>
+          <button class="pal-tab" data-mode="analogous">Analogous</button>
+          <button class="pal-tab" data-mode="triadic">Triadic</button>
+        </div>
+      </div>
+      <div id="palette" class="palette"></div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .tool-body { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+  .main-area  { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+
+  /* Picker column */
+  .picker-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .swatch-big {
+    width: 120px; height: 120px;
+    border: 1px solid var(--border);
+    position: relative;
+    cursor: pointer;
+    transition: box-shadow 0.15s;
+  }
+  .swatch-big:hover { box-shadow: 0 0 0 2px var(--accent); }
+  #native-picker {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    opacity: 0; cursor: pointer;
+    border: none; padding: 0;
+  }
+  .swatch-info { text-align: center; }
+  .swatch-hex { font-size: 14px; font-weight: 700; letter-spacing: 0.06em; display: block; }
+  .swatch-name { font-size: 10px; display: block; margin-top: 2px; }
+
+  /* Inputs column */
+  .inputs-col { flex: 1; min-width: 260px; }
+  .fmt-row { display: flex; flex-direction: column; gap: 12px; }
+  .fmt-group { display: flex; flex-direction: column; gap: 5px; }
+  .fmt-label { font-size: 9px; letter-spacing: 0.2em; color: var(--muted); }
+  .fmt-ctrl { display: flex; gap: 4px; }
+  .fmt-ctrl input { flex: 1; }
+  .fmt-ctrl.triple input { flex: 1; text-align: center; padding: 8px 4px; }
+  .copy-val { flex-shrink: 0; font-size: 9px; padding: 6px 10px; letter-spacing: 0.1em; }
+
+  .css-list { display: flex; flex-direction: column; gap: 3px; }
+  .css-item {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 6px 10px; font-size: 11px; cursor: pointer;
+    transition: all 0.1s;
+  }
+  .css-item:hover { border-color: var(--accent); color: var(--accent); }
+  .css-key { color: var(--muted); font-size: 9px; letter-spacing: 0.1em; width: 48px; flex-shrink: 0; }
+  .css-val { flex: 1; font-family: var(--font); word-break: break-all; }
+  .css-copy { font-size: 9px; color: var(--muted); margin-left: auto; }
+  .css-item:hover .css-copy { color: var(--accent); }
+
+  /* Palette */
+  .palette-section { display: flex; flex-direction: column; gap: 10px; }
+  .section-hd { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .section-label { font-size: 9px; letter-spacing: 0.2em; color: var(--muted); flex-shrink: 0; }
+  .pal-tabs { display: flex; gap: 0; border: 1px solid var(--border); }
+  .pal-tab { padding: 5px 12px; font-size: 10px; border: none; border-right: 1px solid var(--border); letter-spacing: 0.06em; color: var(--muted); }
+  .pal-tab:last-child { border-right: none; }
+  .pal-tab.active { color: var(--accent); background: var(--accent-dim); }
+
+  .palette { display: flex; gap: 0; flex-wrap: wrap; border: 1px solid var(--border); overflow: hidden; }
+  .pal-swatch {
+    height: 64px; flex: 1; min-width: 48px;
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: 6px; cursor: pointer; transition: flex 0.2s;
+    position: relative;
+  }
+  .pal-swatch:hover { flex: 2; }
+  .pal-label {
+    font-size: 9px; color: rgba(255,255,255,0.7);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    letter-spacing: 0.06em; white-space: nowrap;
+    opacity: 0; transition: opacity 0.15s;
+  }
+  .pal-swatch:hover .pal-label { opacity: 1; }
+  .pal-copied { position: absolute; top: 4px; font-size: 9px; color: rgba(255,255,255,0.9); opacity: 0; transition: opacity 0.15s; }
+  .pal-swatch.copied .pal-copied { opacity: 1; }
+</style>
+
+<script>
+  // ── Conversions ──
+  function hexToRgb(hex: string): [number,number,number] | null {
+    const m = hex.replace('#','').match(/^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+    return m ? [parseInt(m[1],16), parseInt(m[2],16), parseInt(m[3],16)] : null;
+  }
+  function rgbToHex(r: number, g: number, b: number): string {
+    return '#' + [r,g,b].map(v => Math.round(v).toString(16).padStart(2,'0')).join('');
+  }
+  function rgbToHsl(r: number, g: number, b: number): [number,number,number] {
+    r/=255; g/=255; b/=255;
+    const max=Math.max(r,g,b), min=Math.min(r,g,b);
+    let h=0, s=0, l=(max+min)/2;
+    if(max!==min) {
+      const d=max-min; s=l>0.5?d/(2-max-min):d/(max+min);
+      switch(max) {
+        case r: h=((g-b)/d+(g<b?6:0))/6; break;
+        case g: h=((b-r)/d+2)/6; break;
+        case b: h=((r-g)/d+4)/6; break;
+      }
+    }
+    return [Math.round(h*360), Math.round(s*100), Math.round(l*100)];
+  }
+  function hslToRgb(h: number, s: number, l: number): [number,number,number] {
+    s/=100; l/=100;
+    const k=(n: number) => (n+h/30)%12;
+    const a=s*Math.min(l,1-l);
+    const f=(n: number) => l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));
+    return [Math.round(f(0)*255), Math.round(f(8)*255), Math.round(f(4)*255)];
+  }
+
+  // ── State ──
+  let currentHex = '#7FFF00';
+  let palMode = 'shades';
+
+  const swatch   = document.getElementById('swatch')      as HTMLElement;
+  const swatchHx = document.getElementById('swatch-hex')  as HTMLElement;
+  const swatchNm = document.getElementById('swatch-name') as HTMLElement;
+  const picker   = document.getElementById('native-picker')as HTMLInputElement;
+  const inpHex   = document.getElementById('inp-hex')     as HTMLInputElement;
+  const inpR     = document.getElementById('inp-r')       as HTMLInputElement;
+  const inpG     = document.getElementById('inp-g')       as HTMLInputElement;
+  const inpB     = document.getElementById('inp-b')       as HTMLInputElement;
+  const inpH     = document.getElementById('inp-h')       as HTMLInputElement;
+  const inpS     = document.getElementById('inp-s')       as HTMLInputElement;
+  const inpL     = document.getElementById('inp-l')       as HTMLInputElement;
+  const cssList  = document.getElementById('css-list')    as HTMLElement;
+  const palette  = document.getElementById('palette')     as HTMLElement;
+
+  function updateUI(hex: string) {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return;
+    const [r,g,b] = rgb;
+    const [h,s,l] = rgbToHsl(r,g,b);
+    currentHex = hex;
+
+    swatch.style.background = hex;
+    swatchHx.textContent = hex.toUpperCase();
+    picker.value = hex;
+
+    inpHex.value = hex.toUpperCase();
+    inpR.value = String(r); inpG.value = String(g); inpB.value = String(b);
+    inpH.value = String(h); inpS.value = String(s); inpL.value = String(l);
+
+    const luminance = (0.299*r + 0.587*g + 0.114*b) / 255;
+    swatchHx.style.color = luminance > 0.6 ? '#111' : '#eee';
+    swatchNm.textContent = '';
+
+    updateCssList(hex, r,g,b,h,s,l);
+    renderPalette();
+  }
+
+  function updateCssList(hex: string, r: number, g: number, b: number, h: number, s: number, l: number) {
+    const items = [
+      { key: 'HEX',  val: hex.toUpperCase() },
+      { key: 'RGB',  val: `rgb(${r}, ${g}, ${b})` },
+      { key: 'RGBA', val: `rgba(${r}, ${g}, ${b}, 1)` },
+      { key: 'HSL',  val: `hsl(${h}, ${s}%, ${l}%)` },
+      { key: 'HSLA', val: `hsla(${h}, ${s}%, ${l}%, 1)` },
+    ];
+    cssList.innerHTML = items.map(i => `
+      <div class="css-item" data-copy="${i.val}">
+        <span class="css-key">${i.key}</span>
+        <span class="css-val">${i.val}</span>
+        <span class="css-copy">COPY</span>
+      </div>
+    `).join('');
+    cssList.querySelectorAll('.css-item').forEach(item => {
+      item.addEventListener('click', async () => {
+        await navigator.clipboard.writeText((item as HTMLElement).dataset.copy!);
+        (item.querySelector('.css-copy') as HTMLElement).textContent = 'COPIED';
+        setTimeout(() => (item.querySelector('.css-copy') as HTMLElement).textContent = 'COPY', 1200);
+      });
+    });
+  }
+
+  function renderPalette() {
+    const rgb = hexToRgb(currentHex)!;
+    const [h,s,l] = rgbToHsl(...rgb);
+    let swatches: string[] = [];
+
+    if (palMode === 'shades') {
+      swatches = Array.from({length:10}, (_,i) => {
+        const nl = Math.round(10 + i * 8);
+        return rgbToHex(...hslToRgb(h, s, nl));
+      });
+    } else if (palMode === 'tints') {
+      swatches = Array.from({length:10}, (_,i) => {
+        const nl = Math.round(95 - i * 8);
+        return rgbToHex(...hslToRgb(h, s, nl));
+      });
+    } else if (palMode === 'complementary') {
+      swatches = [0, 30, 60, 180, 210, 240, 270, 300, 330, 360].map(offset => {
+        return rgbToHex(...hslToRgb((h + offset) % 360, s, l));
+      });
+    } else if (palMode === 'analogous') {
+      swatches = Array.from({length:10}, (_,i) => {
+        return rgbToHex(...hslToRgb((h + (i-4)*12 + 360) % 360, s, l));
+      });
+    } else if (palMode === 'triadic') {
+      const angles = [0, 30, 60, 120, 150, 180, 210, 240, 270, 300, 330];
+      swatches = angles.slice(0,10).map(a => rgbToHex(...hslToRgb((h+a)%360, s, l)));
+    }
+
+    palette.innerHTML = swatches.map(hex => `
+      <div class="pal-swatch" style="background:${hex}" data-hex="${hex}" title="${hex}">
+        <span class="pal-label">${hex.toUpperCase()}</span>
+        <span class="pal-copied">✓</span>
+      </div>
+    `).join('');
+
+    palette.querySelectorAll('.pal-swatch').forEach(sw => {
+      sw.addEventListener('click', async () => {
+        const hex = (sw as HTMLElement).dataset.hex!;
+        await navigator.clipboard.writeText(hex);
+        sw.classList.add('copied');
+        setTimeout(() => sw.classList.remove('copied'), 1000);
+      });
+      sw.addEventListener('dblclick', () => {
+        updateUI((sw as HTMLElement).dataset.hex!);
+      });
+    });
+  }
+
+  // ── Event handlers ──
+  picker.addEventListener('input', () => updateUI(picker.value));
+
+  inpHex.addEventListener('change', () => {
+    const v = inpHex.value.trim();
+    const hex = v.startsWith('#') ? v : '#' + v;
+    if (/^#[0-9a-f]{6}$/i.test(hex)) updateUI(hex);
+  });
+
+  function fromRGB() {
+    const r=parseInt(inpR.value)||0, g=parseInt(inpG.value)||0, b=parseInt(inpB.value)||0;
+    updateUI(rgbToHex(r,g,b));
+  }
+  function fromHSL() {
+    const h=parseInt(inpH.value)||0, s=parseInt(inpS.value)||0, l=parseInt(inpL.value)||0;
+    updateUI(rgbToHex(...hslToRgb(h,s,l)));
+  }
+  [inpR,inpG,inpB].forEach(i => i.addEventListener('change', fromRGB));
+  [inpH,inpS,inpL].forEach(i => i.addEventListener('change', fromHSL));
+
+  // Copy buttons
+  document.querySelector('[data-src="inp-hex"]')!.addEventListener('click', async () => {
+    await navigator.clipboard.writeText(inpHex.value);
+  });
+  document.querySelector('[data-rgb]')!.addEventListener('click', async () => {
+    await navigator.clipboard.writeText(`rgb(${inpR.value}, ${inpG.value}, ${inpB.value})`);
+  });
+  document.querySelector('[data-hsl]')!.addEventListener('click', async () => {
+    await navigator.clipboard.writeText(`hsl(${inpH.value}, ${inpS.value}%, ${inpL.value}%)`);
+  });
+
+  // Palette tabs
+  document.querySelectorAll('.pal-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.pal-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      palMode = (btn as HTMLElement).dataset.mode!;
+      renderPalette();
+    });
+  });
+
+  updateUI('#7FFF00');
+</script>

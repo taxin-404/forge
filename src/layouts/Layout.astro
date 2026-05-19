@@ -1,0 +1,340 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+}
+const { title, description = 'Free developer tools. Fast, offline-capable, zero tracking.' } = Astro.props;
+
+const tools = [
+  { href: '/json',      icon: '{}',  label: 'JSON'      },
+  { href: '/base64',    icon: '64',  label: 'Base64'    },
+  { href: '/hash',      icon: '#',   label: 'Hash'      },
+  { href: '/uuid',      icon: '⊞',  label: 'UUID'      },
+  { href: '/color',     icon: '◈',  label: 'Color'     },
+  { href: '/timestamp', icon: '⧖',  label: 'Timestamp' },
+  { href: '/regex',     icon: '.*',  label: 'Regex'     },
+  { href: '/diff',      icon: '±',   label: 'Diff'      },
+];
+
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content={description} />
+  <title>{title === 'Home' ? 'Forge — Dev Tools' : `${title} · Forge`}</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+  <style is:global>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #0A0A0A;
+      --surface:     #111111;
+      --surface2:    #1A1A1A;
+      --border:      #242424;
+      --border2:     #303030;
+      --accent:      #7FFF00;
+      --accent-dim:  rgba(127,255,0,0.08);
+      --accent-glow: rgba(127,255,0,0.25);
+      --text:        #E2E2E2;
+      --muted:       #505050;
+      --muted2:      #383838;
+      --error:       #FF5555;
+      --warn:        #FFB86C;
+      --font:        'Space Mono', monospace;
+    }
+
+    html {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    body { min-height: 100vh; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 0; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* Form elements */
+    textarea, input[type="text"], input[type="number"], input[type="color"], select {
+      font-family: var(--font);
+      font-size: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.12s, box-shadow 0.12s;
+      border-radius: 0;
+      width: 100%;
+    }
+    textarea:focus, input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-dim);
+    }
+    textarea { resize: vertical; }
+
+    /* Buttons */
+    button {
+      font-family: var(--font);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: all 0.12s;
+      border-radius: 0;
+      white-space: nowrap;
+    }
+    button:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
+    button:active { transform: translateY(1px); }
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+      font-weight: 700;
+    }
+    button.primary:hover {
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+    button.danger:hover {
+      border-color: var(--error);
+      color: var(--error);
+      background: rgba(255,85,85,0.08);
+    }
+
+    /* Utilities */
+    .error  { color: var(--error); }
+    .warn   { color: var(--warn); }
+    .muted  { color: var(--muted); }
+    .accent { color: var(--accent); }
+
+    /* Selection */
+    ::selection { background: var(--accent); color: #000; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <a href="/" class="logo">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <polygon points="9,1 17,5 17,13 9,17 1,13 1,5" stroke="#7FFF00" stroke-width="1.5" fill="none"/>
+          <polygon points="9,4 14,7 14,11 9,14 4,11 4,7" stroke="#7FFF00" stroke-width="1" fill="rgba(127,255,0,0.1)"/>
+        </svg>
+        <span>FORGE</span>
+      </a>
+
+      <nav class="sidenav">
+        <div class="sidenav-label">TOOLS</div>
+        {tools.map(t => {
+          const isActive = path === t.href;
+          return (
+            <a href={t.href} class={`sidenav-item ${isActive ? 'active' : ''}`}>
+              <span class="nav-icon">{t.icon}</span>
+              <span class="nav-text">{t.label}</span>
+              {isActive && <span class="nav-dot">●</span>}
+            </a>
+          );
+        })}
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="footer-line">v1.0 · MIT</div>
+        <div class="footer-line accent">FREE FOREVER</div>
+      </div>
+    </aside>
+
+    <!-- Content -->
+    <main class="content">
+      <slot />
+    </main>
+  </div>
+
+  <!-- Mobile nav -->
+  <nav class="mobile-nav">
+    <a href="/" class="mobile-logo">⬡ FORGE</a>
+    <div class="mobile-tools">
+      {tools.map(t => (
+        <a href={t.href} class={`mobile-tool ${path === t.href ? 'active' : ''}`} title={t.label}>
+          <span>{t.icon}</span>
+        </a>
+      ))}
+    </div>
+  </nav>
+
+  <style>
+    .app {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 180px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      background: var(--surface);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 18px 16px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.2em;
+      color: var(--text);
+      transition: color 0.12s;
+    }
+    .logo:hover { color: var(--accent); }
+
+    .sidenav {
+      flex: 1;
+      padding: 14px 0 8px;
+    }
+    .sidenav-label {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      color: var(--muted2);
+      padding: 0 16px 8px;
+    }
+    .sidenav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 16px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      transition: all 0.12s;
+      border-left: 2px solid transparent;
+      position: relative;
+    }
+    .sidenav-item:hover {
+      color: var(--text);
+      background: var(--surface2);
+      border-left-color: var(--border2);
+    }
+    .sidenav-item.active {
+      color: var(--accent);
+      border-left-color: var(--accent);
+      background: var(--accent-dim);
+    }
+    .nav-icon {
+      font-size: 11px;
+      width: 22px;
+      text-align: center;
+      flex-shrink: 0;
+      font-style: normal;
+    }
+    .nav-dot {
+      position: absolute;
+      right: 12px;
+      font-size: 6px;
+      color: var(--accent);
+    }
+
+    .sidebar-footer {
+      padding: 14px 16px;
+      border-top: 1px solid var(--border);
+    }
+    .footer-line {
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+    .footer-line.accent { color: var(--accent); }
+
+    /* ── Content ── */
+    .content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Mobile nav ── */
+    .mobile-nav { display: none; }
+
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .app { padding-bottom: 56px; }
+      .mobile-nav {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        background: var(--surface);
+        border-top: 1px solid var(--border);
+        z-index: 100;
+        height: 56px;
+      }
+      .mobile-logo {
+        font-weight: 700;
+        font-size: 11px;
+        letter-spacing: 0.15em;
+        color: var(--accent);
+        padding: 0 12px;
+        flex-shrink: 0;
+        border-right: 1px solid var(--border);
+        height: 100%;
+        display: flex;
+        align-items: center;
+      }
+      .mobile-tools {
+        display: flex;
+        flex: 1;
+        overflow-x: auto;
+        height: 100%;
+      }
+      .mobile-tool {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        height: 100%;
+        font-size: 12px;
+        color: var(--muted);
+        border-right: 1px solid var(--border);
+        transition: all 0.12s;
+      }
+      .mobile-tool.active {
+        color: var(--accent);
+        background: var(--accent-dim);
+      }
+    }
+  </style>
+</body>
+</html>

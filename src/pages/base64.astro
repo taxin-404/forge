@@ -1,0 +1,266 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PageHeader from '../components/PageHeader.astro';
+---
+<Layout title="Base64">
+  <PageHeader title="Base64" desc="Encode or decode Base64 — text and files" />
+
+  <div class="tool-body">
+    <!-- Mode tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="text">Text</button>
+      <button class="tab" data-tab="file">File → Base64</button>
+    </div>
+
+    <!-- Text mode -->
+    <div id="tab-text" class="tab-content active">
+      <div class="panels">
+        <div class="panel">
+          <div class="panel-hd">
+            <span class="panel-label">INPUT</span>
+          </div>
+          <textarea id="text-input" spellcheck="false" placeholder="Type or paste text to encode / Base64 to decode..."></textarea>
+          <div class="btn-row">
+            <button id="btn-encode" class="primary">Encode →</button>
+            <button id="btn-decode">← Decode</button>
+            <button id="btn-swap">⇅ Swap</button>
+            <button id="btn-clear-text" class="danger">Clear</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-hd">
+            <span class="panel-label">OUTPUT</span>
+            <button id="btn-copy-text" class="inline-btn">COPY</button>
+          </div>
+          <textarea id="text-output" spellcheck="false" readonly placeholder="Result..."></textarea>
+          <div id="text-status" class="status-line"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- File mode -->
+    <div id="tab-file" class="tab-content">
+      <div class="file-zone" id="drop-zone">
+        <input type="file" id="file-input" style="display:none" />
+        <div class="drop-inner" id="drop-inner">
+          <div class="drop-icon">⬆</div>
+          <div class="drop-text">Drop a file here or <button class="link-btn" id="btn-pick">browse</button></div>
+          <div class="drop-meta" id="drop-meta">Any file type — result is Base64 encoded string</div>
+        </div>
+      </div>
+
+      <div class="file-result" id="file-result" style="display:none">
+        <div class="panel-hd">
+          <span class="panel-label" id="file-label">FILE.EXT</span>
+          <button id="btn-copy-file" class="inline-btn">COPY</button>
+        </div>
+        <textarea id="file-output" readonly spellcheck="false"></textarea>
+        <div class="btn-row">
+          <span id="file-stats" class="status-line"></span>
+          <button id="btn-reset-file" class="danger">Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .tool-body {
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    height: calc(100vh - 89px);
+  }
+  .tabs {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border);
+    width: fit-content;
+  }
+  .tab {
+    padding: 6px 18px;
+    font-size: 11px;
+    border: none;
+    border-right: 1px solid var(--border);
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+  .tab:last-child { border-right: none; }
+  .tab.active { color: var(--accent); background: var(--accent-dim); }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  .tab-content { display: none; flex: 1; min-height: 0; flex-direction: column; }
+  .tab-content.active { display: flex; }
+
+  .panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    flex: 1;
+    min-height: 0;
+  }
+  .panel { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+  .panel-hd { display: flex; align-items: center; justify-content: space-between; }
+  .panel-label { font-size: 9px; letter-spacing: 0.2em; color: var(--muted); }
+  .panel textarea { flex: 1; resize: none; min-height: 0; line-height: 1.6; }
+
+  .btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .inline-btn { font-size: 9px; padding: 2px 8px; letter-spacing: 0.12em; }
+  .link-btn {
+    background: none; border: none; color: var(--accent);
+    font-family: var(--font); font-size: inherit; cursor: pointer;
+    padding: 0; text-decoration: underline; letter-spacing: 0;
+    text-transform: none; font-weight: 400;
+  }
+  .link-btn:hover { color: var(--text); background: none; border: none; }
+
+  .status-line {
+    font-size: 10px;
+    color: var(--muted);
+    min-height: 14px;
+  }
+  .status-line.ok  { color: var(--accent); }
+  .status-line.err { color: var(--error);  }
+
+  /* File tab */
+  .file-zone {
+    border: 1px dashed var(--border2);
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    background: var(--surface);
+    cursor: pointer;
+  }
+  .file-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .drop-inner { text-align: center; }
+  .drop-icon  { font-size: 32px; color: var(--muted); margin-bottom: 10px; }
+  .drop-text  { font-size: 13px; color: var(--text); margin-bottom: 4px; }
+  .drop-meta  { font-size: 10px; color: var(--muted); }
+
+  .file-result { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; }
+  .file-result textarea { flex: 1; resize: none; min-height: 160px; line-height: 1.6; }
+
+  @media (max-width: 700px) {
+    .tool-body { height: auto; }
+    .panels { grid-template-columns: 1fr; }
+    .panel textarea { height: 180px; }
+  }
+</style>
+
+<script>
+  // Tab switching
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = (btn as HTMLElement).dataset.tab!;
+      document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + tab)!.classList.add('active');
+    });
+  });
+
+  // ── Text mode ──
+  const tIn  = document.getElementById('text-input')  as HTMLTextAreaElement;
+  const tOut = document.getElementById('text-output') as HTMLTextAreaElement;
+  const tSt  = document.getElementById('text-status') as HTMLElement;
+
+  function setStatus(el: HTMLElement, msg: string, type = '') {
+    el.textContent = msg;
+    el.className = 'status-line ' + type;
+  }
+
+  document.getElementById('btn-encode')!.addEventListener('click', () => {
+    try {
+      const v = tIn.value;
+      if (!v) return;
+      tOut.value = btoa(unescape(encodeURIComponent(v)));
+      setStatus(tSt, `✓ Encoded — ${tOut.value.length} chars`, 'ok');
+    } catch(e: any) { setStatus(tSt, '⚠ ' + e.message, 'err'); }
+  });
+
+  document.getElementById('btn-decode')!.addEventListener('click', () => {
+    try {
+      const v = tIn.value.trim();
+      if (!v) return;
+      tOut.value = decodeURIComponent(escape(atob(v)));
+      setStatus(tSt, `✓ Decoded — ${tOut.value.length} chars`, 'ok');
+    } catch { setStatus(tSt, '⚠ Invalid Base64 string', 'err'); }
+  });
+
+  document.getElementById('btn-swap')!.addEventListener('click', () => {
+    const tmp = tIn.value;
+    tIn.value = tOut.value;
+    tOut.value = tmp;
+    setStatus(tSt, '⇅ Swapped', 'ok');
+  });
+
+  document.getElementById('btn-clear-text')!.addEventListener('click', () => {
+    tIn.value = ''; tOut.value = '';
+    setStatus(tSt, '', '');
+  });
+
+  document.getElementById('btn-copy-text')!.addEventListener('click', async () => {
+    if (!tOut.value) return;
+    await navigator.clipboard.writeText(tOut.value);
+    setStatus(tSt, '✓ Copied!', 'ok');
+  });
+
+  // ── File mode ──
+  const dropZone = document.getElementById('drop-zone')  as HTMLElement;
+  const fileInp  = document.getElementById('file-input') as HTMLInputElement;
+  const fileOut  = document.getElementById('file-output')as HTMLTextAreaElement;
+  const fileRes  = document.getElementById('file-result')as HTMLElement;
+  const dropInner= document.getElementById('drop-inner') as HTMLElement;
+  const fileLbl  = document.getElementById('file-label') as HTMLElement;
+  const fileStats= document.getElementById('file-stats') as HTMLElement;
+
+  function processFile(file: File) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const b64 = (reader.result as string).split(',')[1];
+      fileOut.value = b64;
+      fileLbl.textContent = file.name.toUpperCase();
+      const origKB = (file.size / 1024).toFixed(1);
+      const b64KB  = (b64.length / 1024).toFixed(1);
+      fileStats.textContent = `Original: ${origKB} KB → Base64: ${b64KB} KB`;
+      fileStats.className = 'status-line ok';
+      fileRes.style.display = 'flex';
+      dropInner.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  document.getElementById('btn-pick')!.addEventListener('click', () => fileInp.click());
+  dropZone.addEventListener('click', () => fileInp.click());
+  fileInp.addEventListener('change', () => {
+    if (fileInp.files?.[0]) processFile(fileInp.files[0]);
+  });
+
+  dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    if (e.dataTransfer?.files?.[0]) processFile(e.dataTransfer.files[0]);
+  });
+
+  document.getElementById('btn-copy-file')!.addEventListener('click', async () => {
+    if (!fileOut.value) return;
+    await navigator.clipboard.writeText(fileOut.value);
+  });
+
+  document.getElementById('btn-reset-file')!.addEventListener('click', () => {
+    fileOut.value = ''; fileRes.style.display = 'none';
+    dropInner.style.display = 'block'; fileInp.value = '';
+  });
+</script>

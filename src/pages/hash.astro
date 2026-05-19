@@ -1,0 +1,201 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PageHeader from '../components/PageHeader.astro';
+---
+<Layout title="Hash">
+  <PageHeader title="Hash Generator" desc="Generate cryptographic hashes via Web Crypto API — all computation stays in your browser" />
+
+  <div class="tool-body">
+    <div class="input-section">
+      <div class="section-label">INPUT</div>
+      <div class="input-row">
+        <textarea id="hash-input" rows="4" spellcheck="false" placeholder="Type or paste text to hash..."></textarea>
+      </div>
+      <div class="btn-row">
+        <button id="btn-hash" class="primary">Generate Hashes</button>
+        <button id="btn-file-pick">Hash a File</button>
+        <input type="file" id="file-inp" style="display:none" />
+        <button id="btn-clear" class="danger">Clear</button>
+        <span id="src-label" class="src-label"></span>
+      </div>
+    </div>
+
+    <div class="results" id="results">
+      <div class="results-placeholder">
+        <span>Enter text or load a file, then click Generate</span>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .tool-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .section-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .input-row textarea {
+    line-height: 1.6;
+    resize: vertical;
+  }
+  .btn-row { display: flex; gap: 6px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+  .src-label { font-size: 10px; color: var(--accent); letter-spacing: 0.05em; }
+
+  .results {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .results-placeholder {
+    padding: 32px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    border: 1px dashed var(--border);
+  }
+
+  .hash-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 90px 1fr auto;
+    align-items: center;
+    gap: 0;
+    overflow: hidden;
+    transition: border-color 0.12s;
+  }
+  .hash-row:hover { border-color: var(--border2); }
+
+  .hash-algo {
+    padding: 12px 14px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    border-right: 1px solid var(--border);
+    background: var(--surface2);
+    height: 100%;
+    display: flex;
+    align-items: center;
+  }
+  .hash-value {
+    padding: 12px 14px;
+    font-size: 11px;
+    color: var(--text);
+    letter-spacing: 0.04em;
+    word-break: break-all;
+    line-height: 1.5;
+    font-family: var(--font);
+  }
+  .hash-copy {
+    padding: 0 14px;
+    border-left: 1px solid var(--border);
+    border: none;
+    border-left: 1px solid var(--border);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    font-size: 10px;
+    cursor: pointer;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    font-family: var(--font);
+    background: transparent;
+    white-space: nowrap;
+    padding: 0 12px;
+    transition: all 0.12s;
+  }
+  .hash-copy:hover { color: var(--accent); background: var(--accent-dim); }
+  .hash-copy.copied { color: var(--accent); }
+
+  .spinner {
+    padding: 24px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+  }
+</style>
+
+<script>
+  const hashInput = document.getElementById('hash-input') as HTMLTextAreaElement;
+  const results   = document.getElementById('results')   as HTMLElement;
+  const srcLabel  = document.getElementById('src-label') as HTMLElement;
+  const fileInp   = document.getElementById('file-inp')  as HTMLInputElement;
+
+  const algos = [
+    { name: 'SHA-1',   algo: 'SHA-1'   },
+    { name: 'SHA-256', algo: 'SHA-256' },
+    { name: 'SHA-384', algo: 'SHA-384' },
+    { name: 'SHA-512', algo: 'SHA-512' },
+  ];
+
+  async function computeHashes(data: ArrayBuffer) {
+    results.innerHTML = '<div class="spinner">Computing...</div>';
+    const rows: string[] = [];
+    for (const { name, algo } of algos) {
+      const buf = await crypto.subtle.digest(algo, data);
+      const hex = Array.from(new Uint8Array(buf))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+      rows.push(`
+        <div class="hash-row">
+          <div class="hash-algo">${name}</div>
+          <div class="hash-value">${hex}</div>
+          <button class="hash-copy" data-hash="${hex}">COPY</button>
+        </div>
+      `);
+    }
+    results.innerHTML = rows.join('');
+
+    document.querySelectorAll('.hash-copy').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const h = (btn as HTMLElement).dataset.hash!;
+        await navigator.clipboard.writeText(h);
+        btn.textContent = 'COPIED';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1500);
+      });
+    });
+  }
+
+  document.getElementById('btn-hash')!.addEventListener('click', async () => {
+    const txt = hashInput.value;
+    if (!txt) return;
+    const enc = new TextEncoder();
+    await computeHashes(enc.encode(txt).buffer);
+    srcLabel.textContent = 'text input';
+  });
+
+  document.getElementById('btn-file-pick')!.addEventListener('click', () => fileInp.click());
+
+  fileInp.addEventListener('change', async () => {
+    const file = fileInp.files?.[0];
+    if (!file) return;
+    const buf = await file.arrayBuffer();
+    srcLabel.textContent = file.name;
+    await computeHashes(buf);
+  });
+
+  document.getElementById('btn-clear')!.addEventListener('click', () => {
+    hashInput.value = '';
+    fileInp.value = '';
+    srcLabel.textContent = '';
+    results.innerHTML = '<div class="results-placeholder"><span>Enter text or load a file, then click Generate</span></div>';
+  });
+
+  // Auto-generate on Enter (Ctrl+Enter)
+  hashInput.addEventListener('keydown', async (e: KeyboardEvent) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      const enc = new TextEncoder();
+      await computeHashes(enc.encode(hashInput.value).buffer);
+    }
+  });
+</script>

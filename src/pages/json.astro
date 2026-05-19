@@ -1,0 +1,217 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PageHeader from '../components/PageHeader.astro';
+---
+<Layout title="JSON">
+  <PageHeader title="JSON Formatter" desc="Format, validate, minify and explore JSON — auto-detects on paste" />
+
+  <div class="tool-body">
+    <div class="toolbar">
+      <button id="btn-format" class="primary">▶ Format</button>
+      <button id="btn-minify">Minify</button>
+      <button id="btn-validate">Validate</button>
+      <button id="btn-sort">Sort Keys</button>
+      <button id="btn-clear" class="danger">Clear</button>
+      <div class="spacer"></div>
+      <span id="status" class="status-msg"></span>
+    </div>
+
+    <div class="panels">
+      <div class="panel">
+        <div class="panel-hd">
+          <span class="panel-label">INPUT</span>
+          <span id="char-count" class="panel-meta">0 chars</span>
+        </div>
+        <textarea id="input" spellcheck="false" placeholder='Paste JSON here...&#10;&#10;{&#10;  "name": "forge",&#10;  "version": 1&#10;}'></textarea>
+      </div>
+
+      <div class="panel">
+        <div class="panel-hd">
+          <span class="panel-label">OUTPUT</span>
+          <button id="btn-copy" class="inline-btn">COPY</button>
+        </div>
+        <textarea id="output" spellcheck="false" readonly placeholder="Result appears here..."></textarea>
+      </div>
+    </div>
+
+    <div id="error-bar" class="error-bar" style="display:none"></div>
+  </div>
+</Layout>
+
+<style>
+  .tool-body {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 89px);
+    padding: 16px 20px;
+    gap: 12px;
+  }
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .spacer { flex: 1; }
+  .status-msg {
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    transition: color 0.2s;
+  }
+  .status-msg.ok  { color: var(--accent); }
+  .status-msg.err { color: var(--error);  }
+
+  .panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    flex: 1;
+    min-height: 0;
+  }
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 0;
+  }
+  .panel-hd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .panel-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+  }
+  .panel-meta {
+    font-size: 9px;
+    color: var(--muted);
+  }
+  .panel textarea {
+    flex: 1;
+    resize: none;
+    min-height: 0;
+    line-height: 1.6;
+  }
+
+  .inline-btn {
+    font-size: 9px;
+    padding: 2px 8px;
+    letter-spacing: 0.12em;
+  }
+
+  .error-bar {
+    font-size: 11px;
+    color: var(--error);
+    background: rgba(255,85,85,0.08);
+    border: 1px solid rgba(255,85,85,0.25);
+    padding: 8px 12px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  @media (max-width: 700px) {
+    .tool-body { height: auto; }
+    .panels { grid-template-columns: 1fr; }
+    .panel textarea { height: 220px; }
+  }
+</style>
+
+<script>
+  const inp    = document.getElementById('input')  as HTMLTextAreaElement;
+  const out    = document.getElementById('output') as HTMLTextAreaElement;
+  const status = document.getElementById('status') as HTMLElement;
+  const errBar = document.getElementById('error-bar') as HTMLElement;
+  const charCt = document.getElementById('char-count') as HTMLElement;
+
+  function ok(msg: string) {
+    status.textContent = '✓ ' + msg;
+    status.className = 'status-msg ok';
+    errBar.style.display = 'none';
+  }
+  function err(msg: string) {
+    status.textContent = '';
+    status.className = 'status-msg err';
+    errBar.textContent = '⚠ ' + msg;
+    errBar.style.display = 'block';
+  }
+  function clear() {
+    status.textContent = '';
+    status.className = 'status-msg';
+    errBar.style.display = 'none';
+  }
+
+  inp.addEventListener('input', () => {
+    charCt.textContent = inp.value.length + ' chars';
+  });
+
+  document.getElementById('btn-format')!.addEventListener('click', () => {
+    try {
+      const v = inp.value.trim();
+      if (!v) return;
+      out.value = JSON.stringify(JSON.parse(v), null, 2);
+      ok('Formatted');
+    } catch(e: any) { err(e.message); out.value = ''; }
+  });
+
+  document.getElementById('btn-minify')!.addEventListener('click', () => {
+    try {
+      const v = inp.value.trim();
+      if (!v) return;
+      out.value = JSON.stringify(JSON.parse(v));
+      ok(`Minified — ${out.value.length} chars`);
+    } catch(e: any) { err(e.message); out.value = ''; }
+  });
+
+  document.getElementById('btn-validate')!.addEventListener('click', () => {
+    try {
+      const v = inp.value.trim();
+      if (!v) return;
+      const parsed = JSON.parse(v);
+      const keys   = JSON.stringify(parsed, null, 2).split('\n').length;
+      ok(`Valid JSON · ${keys} lines`);
+    } catch(e: any) { err(e.message); }
+  });
+
+  document.getElementById('btn-sort')!.addEventListener('click', () => {
+    try {
+      const v = inp.value.trim();
+      if (!v) return;
+      function sortKeys(o: any): any {
+        if (Array.isArray(o)) return o.map(sortKeys);
+        if (o && typeof o === 'object') {
+          return Object.keys(o).sort().reduce((acc: any, k) => {
+            acc[k] = sortKeys(o[k]); return acc;
+          }, {});
+        }
+        return o;
+      }
+      out.value = JSON.stringify(sortKeys(JSON.parse(v)), null, 2);
+      ok('Keys sorted');
+    } catch(e: any) { err(e.message); out.value = ''; }
+  });
+
+  document.getElementById('btn-clear')!.addEventListener('click', () => {
+    inp.value = ''; out.value = ''; charCt.textContent = '0 chars'; clear();
+  });
+
+  document.getElementById('btn-copy')!.addEventListener('click', async () => {
+    if (!out.value) return;
+    await navigator.clipboard.writeText(out.value);
+    ok('Copied to clipboard!');
+  });
+
+  // Auto-format on paste
+  inp.addEventListener('paste', () => {
+    setTimeout(() => {
+      try {
+        const parsed = JSON.parse(inp.value.trim());
+        out.value = JSON.stringify(parsed, null, 2);
+        ok('Auto-formatted');
+      } catch {}
+      charCt.textContent = inp.value.length + ' chars';
+    }, 0);
+  });
+</script>

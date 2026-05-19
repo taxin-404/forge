@@ -1,0 +1,40 @@
+---
+interface Props {
+  title: string;
+  desc: string;
+  tag?: string;
+}
+const { title, desc, tag = 'TOOL' } = Astro.props;
+---
+<header class="ph">
+  <span class="ph-tag">{tag}</span>
+  <h1 class="ph-title">{title}</h1>
+  <p class="ph-desc">{desc}</p>
+</header>
+<style>
+  .ph {
+    padding: 24px 28px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .ph-tag {
+    display: inline-block;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    margin-bottom: 5px;
+  }
+  .ph-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    color: var(--text);
+  }
+  .ph-desc {
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+</style>

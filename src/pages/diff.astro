@@ -1,0 +1,372 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PageHeader from '../components/PageHeader.astro';
+---
+<Layout title="Diff">
+  <PageHeader title="Text Diff" desc="Compare two texts line-by-line — see exactly what changed, added, or removed" />
+
+  <div class="tool-body">
+    <div class="toolbar">
+      <button id="btn-diff" class="primary">▶ Compare</button>
+      <button id="btn-swap">⇅ Swap</button>
+      <button id="btn-clear" class="danger">Clear</button>
+      <div class="spacer"></div>
+      <div id="diff-stats" class="diff-stats"></div>
+    </div>
+
+    <!-- Input panels -->
+    <div class="inputs" id="input-panels">
+      <div class="panel">
+        <div class="panel-hd">
+          <span class="panel-label">ORIGINAL</span>
+          <span id="cnt-a" class="panel-meta">0 lines</span>
+        </div>
+        <textarea id="inp-a" spellcheck="false" placeholder="Paste original text here..."></textarea>
+      </div>
+      <div class="panel">
+        <div class="panel-hd">
+          <span class="panel-label">MODIFIED</span>
+          <span id="cnt-b" class="panel-meta">0 lines</span>
+        </div>
+        <textarea id="inp-b" spellcheck="false" placeholder="Paste modified text here..."></textarea>
+      </div>
+    </div>
+
+    <!-- Diff output -->
+    <div id="diff-output" class="diff-output" style="display:none">
+      <div class="diff-hd">
+        <span class="panel-label">DIFF RESULT</span>
+        <div class="diff-legend">
+          <span class="leg added">+ ADDED</span>
+          <span class="leg removed">− REMOVED</span>
+          <span class="leg unchanged">· UNCHANGED</span>
+        </div>
+        <button id="btn-copy-diff" class="inline-btn">COPY PATCH</button>
+        <button id="btn-back">BACK</button>
+      </div>
+      <div id="diff-lines" class="diff-lines"></div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .tool-body {
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: calc(100vh - 89px);
+  }
+  .toolbar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .spacer  { flex: 1; }
+
+  .diff-stats { display: flex; gap: 12px; font-size: 10px; }
+  .ds-added   { color: var(--accent); letter-spacing: 0.06em; }
+  .ds-removed { color: var(--error);  letter-spacing: 0.06em; }
+  .ds-same    { color: var(--muted);  letter-spacing: 0.06em; }
+
+  .inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    flex: 1;
+    min-height: 0;
+  }
+  .panel { display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+  .panel-hd { display: flex; justify-content: space-between; align-items: center; }
+  .panel-label { font-size: 9px; letter-spacing: 0.2em; color: var(--muted); }
+  .panel-meta  { font-size: 9px; color: var(--muted); }
+  .panel textarea { flex: 1; resize: none; min-height: 0; line-height: 1.6; font-size: 12px; }
+
+  .inline-btn { font-size: 9px; padding: 3px 8px; letter-spacing: 0.1em; }
+
+  /* Diff output */
+  .diff-output {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
+  }
+  .diff-hd {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .diff-legend { display: flex; gap: 10px; margin-left: 4px; }
+  .leg { font-size: 9px; letter-spacing: 0.1em; font-weight: 700; }
+  .leg.added    { color: var(--accent); }
+  .leg.removed  { color: var(--error);  }
+  .leg.unchanged{ color: var(--muted);  }
+
+  .diff-lines {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    line-height: 1;
+  }
+
+  .diff-line {
+    display: grid;
+    grid-template-columns: 36px 36px 20px 1fr;
+    align-items: stretch;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    min-height: 26px;
+  }
+  .diff-line:last-child { border-bottom: none; }
+
+  .dl-num {
+    padding: 5px 8px;
+    font-size: 9px;
+    color: var(--muted2);
+    text-align: right;
+    user-select: none;
+    border-right: 1px solid var(--border);
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    letter-spacing: 0;
+  }
+  .dl-sign {
+    width: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    user-select: none;
+  }
+  .dl-text {
+    padding: 5px 10px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-family: var(--font);
+    line-height: 1.5;
+    flex: 1;
+  }
+
+  .diff-line.added   { background: rgba(127,255,0,0.06); }
+  .diff-line.added   .dl-sign { color: var(--accent); }
+  .diff-line.added   .dl-text { color: var(--accent); }
+  .diff-line.removed { background: rgba(255,85,85,0.06); }
+  .diff-line.removed .dl-sign { color: var(--error); }
+  .diff-line.removed .dl-text { color: var(--error); }
+  .diff-line.same    .dl-sign { color: var(--muted2); }
+  .diff-line.same    .dl-text { color: var(--muted); }
+
+  .diff-sep {
+    padding: 3px 10px;
+    font-size: 9px;
+    color: var(--muted2);
+    letter-spacing: 0.12em;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    grid-column: 1 / -1;
+  }
+
+  .diff-empty {
+    padding: 40px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 700px) {
+    .tool-body { height: auto; }
+    .inputs { grid-template-columns: 1fr; }
+    .panel textarea { height: 160px; }
+  }
+</style>
+
+<script>
+  const inpA   = document.getElementById('inp-a')       as HTMLTextAreaElement;
+  const inpB   = document.getElementById('inp-b')       as HTMLTextAreaElement;
+  const cntA   = document.getElementById('cnt-a')       as HTMLElement;
+  const cntB   = document.getElementById('cnt-b')       as HTMLElement;
+  const panels = document.getElementById('input-panels')as HTMLElement;
+  const output = document.getElementById('diff-output') as HTMLElement;
+  const lines  = document.getElementById('diff-lines')  as HTMLElement;
+  const stats  = document.getElementById('diff-stats')  as HTMLElement;
+
+  inpA.addEventListener('input', () => {
+    cntA.textContent = (inpA.value ? inpA.value.split('\n').length : 0) + ' lines';
+  });
+  inpB.addEventListener('input', () => {
+    cntB.textContent = (inpB.value ? inpB.value.split('\n').length : 0) + ' lines';
+  });
+
+  // ── Myers / LCS diff ──
+  type DiffOp = { type: 'same' | 'added' | 'removed'; text: string };
+
+  function computeDiff(a: string[], b: string[]): DiffOp[] {
+    const m = a.length, n = b.length;
+    // Limit to avoid freezing browser on huge inputs
+    if (m * n > 500_000) {
+      // Fallback: naive line diff
+      const result: DiffOp[] = [];
+      const setA = new Set(a), setB = new Set(b);
+      a.forEach(l => result.push({ type: setB.has(l) ? 'same' : 'removed', text: l }));
+      b.forEach(l => { if (!setA.has(l)) result.push({ type: 'added', text: l }); });
+      return result;
+    }
+
+    // Build LCS table
+    const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+    for (let i = 1; i <= m; i++)
+      for (let j = 1; j <= n; j++)
+        dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);
+
+    // Backtrack
+    const result: DiffOp[] = [];
+    let i = m, j = n;
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && a[i-1] === b[j-1]) {
+        result.unshift({ type: 'same',    text: a[i-1] }); i--; j--;
+      } else if (j > 0 && (i === 0 || dp[i][j-1] >= dp[i-1][j])) {
+        result.unshift({ type: 'added',   text: b[j-1] }); j--;
+      } else {
+        result.unshift({ type: 'removed', text: a[i-1] }); i--;
+      }
+    }
+    return result;
+  }
+
+  function escHtml(s: string): string {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function renderDiff(ops: DiffOp[]) {
+    let addedCt = 0, removedCt = 0, sameCt = 0;
+    let numA = 0, numB = 0;
+    let html = '';
+    let prevType = '';
+    let sameRun = 0;
+
+    // Collapse long same-runs (show 3 context lines)
+    const CTX = 3;
+    // First pass: tag each op with line numbers
+    const tagged = ops.map(op => {
+      if (op.type === 'same')    { numA++; numB++; sameCt++; return { ...op, na: numA, nb: numB }; }
+      if (op.type === 'removed') { numA++;         removedCt++; return { ...op, na: numA, nb: 0 }; }
+      if (op.type === 'added')   {         numB++; addedCt++;   return { ...op, na: 0,  nb: numB }; }
+      return { ...op, na: 0, nb: 0 };
+    });
+
+    // Find which "same" lines are within CTX of a change
+    const changed = new Set<number>();
+    tagged.forEach((op, idx) => {
+      if (op.type !== 'same') {
+        for (let k = Math.max(0, idx - CTX); k <= Math.min(tagged.length-1, idx + CTX); k++) {
+          changed.add(k);
+        }
+      }
+    });
+
+    let collapsed = false;
+    tagged.forEach((op, idx) => {
+      if (op.type === 'same' && !changed.has(idx)) {
+        if (!collapsed) {
+          html += `<div class="diff-line"><div class="diff-sep" style="grid-column:1/-1">···</div></div>`;
+          collapsed = true;
+        }
+        return;
+      }
+      collapsed = false;
+
+      const sign = op.type === 'added' ? '+' : op.type === 'removed' ? '−' : '·';
+      const naStr = op.na ? String(op.na) : '';
+      const nbStr = op.nb ? String(op.nb) : '';
+      html += `
+        <div class="diff-line ${op.type}">
+          <div class="dl-num">${naStr}</div>
+          <div class="dl-num">${nbStr}</div>
+          <div class="dl-sign">${sign}</div>
+          <div class="dl-text">${escHtml(op.text)}</div>
+        </div>
+      `;
+    });
+
+    if (!html) html = '<div class="diff-empty">No differences found — texts are identical</div>';
+    lines.innerHTML = html;
+
+    stats.innerHTML = `
+      <span class="ds-added">+${addedCt} added</span>
+      <span class="ds-removed">−${removedCt} removed</span>
+      <span class="ds-same">${sameCt} same</span>
+    `;
+
+    // Store for copy-as-patch
+    (window as any)._lastOps = ops;
+  }
+
+  document.getElementById('btn-diff')!.addEventListener('click', () => {
+    const a = inpA.value.split('\n');
+    const b = inpB.value.split('\n');
+    const ops = computeDiff(a, b);
+    renderDiff(ops);
+    panels.style.display = 'none';
+    output.style.display = 'flex';
+  });
+
+  document.getElementById('btn-back')!.addEventListener('click', () => {
+    output.style.display = 'none';
+    panels.style.display = 'grid';
+  });
+
+  document.getElementById('btn-swap')!.addEventListener('click', () => {
+    const tmp = inpA.value;
+    inpA.value = inpB.value;
+    inpB.value = tmp;
+    cntA.textContent = (inpA.value.split('\n').length) + ' lines';
+    cntB.textContent = (inpB.value.split('\n').length) + ' lines';
+  });
+
+  document.getElementById('btn-clear')!.addEventListener('click', () => {
+    inpA.value = ''; inpB.value = '';
+    cntA.textContent = '0 lines'; cntB.textContent = '0 lines';
+    stats.innerHTML = '';
+    output.style.display = 'none';
+    panels.style.display = 'grid';
+  });
+
+  document.getElementById('btn-copy-diff')!.addEventListener('click', async () => {
+    const ops: DiffOp[] = (window as any)._lastOps;
+    if (!ops) return;
+    const patch = ops.map(op => {
+      const prefix = op.type === 'added' ? '+ ' : op.type === 'removed' ? '- ' : '  ';
+      return prefix + op.text;
+    }).join('\n');
+    await navigator.clipboard.writeText(patch);
+    const btn = document.getElementById('btn-copy-diff')!;
+    btn.textContent = 'COPIED';
+    setTimeout(() => btn.textContent = 'COPY PATCH', 1500);
+  });
+
+  // Seed with example
+  inpA.value = `function greet(name) {
+  console.log("Hello, " + name);
+  return true;
+}
+
+const user = "Alice";
+greet(user);`;
+
+  inpB.value = `function greet(name, greeting = "Hello") {
+  console.log(\`\${greeting}, \${name}!\`);
+  return { success: true, name };
+}
+
+const user = "Bob";
+const admin = "Alice";
+greet(user);
+greet(admin, "Welcome");`;
+
+  cntA.textContent = inpA.value.split('\n').length + ' lines';
+  cntB.textContent = inpB.value.split('\n').length + ' lines';
+</script>
